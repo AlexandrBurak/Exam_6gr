@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 class Vacancy {
     public Integer vacancy_id;
@@ -71,6 +72,7 @@ class NoClose{
     public Integer recruiter_id;
     //public Date date;
     public Boolean is_act;
+    public Integer days_delta;
 
     public NoClose(Scanner sc) throws ParseException {
         this.vancancy_id = Integer.valueOf(sc.next());
@@ -85,6 +87,17 @@ class NoClose{
         String strDate2 = tmp;
         SimpleDateFormat formatter2 = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
         Date date2 = formatter2.parse(strDate2);
+        /*
+        Date date_strt = formatter1.parse(data_open);
+        Date date_end = formatter1.parse(data_close);
+        long milliseconds = date_end.getTime() - date_strt.getTime();
+        this.days_delta = (int) (milliseconds / (24 * 60 * 60 * 1000));
+        */
+        /*
+
+        long milliseconds = end_date.getTime() - strt_date.getTime();
+        this.days_delta = (int) (milliseconds / (24 * 60 * 60 * 1000));
+         */
         if(data_close.equals("0")){
             int c = date1.compareTo(date2);
             if(c == 1){
@@ -114,6 +127,7 @@ public class Main {
         while(sc1.hasNext()){
             vac.add(new Vacancy(sc1));
         }
+        ArrayList<Vacancy> vacancies = new ArrayList<>(vac);
         Comparator<Vacancy> cmp1 = new Comparator<Vacancy>() {
             @Override
             public int compare(Vacancy o1, Vacancy o2) {
@@ -198,5 +212,41 @@ public class Main {
         Scanner sc5 = new Scanner(new File("input5.txt"));
         Integer recr_id = sc5.nextInt();
 
+        //System.out.println(no_close);
+        List<NoClose> no_cls = no_close.stream().filter(x-> x.recruiter_id.equals(recr_id) & !x.data_close.equals("0")).collect(Collectors.toList());
+        ArrayList<Vacancy> vacfltr  = new ArrayList<>();
+        for(int i = 0; i < no_cls.size(); i++){
+            int finalI = i;
+            Vacancy tmp = vacancies.stream().filter(x-> x.vacancy_id.equals(no_cls.get(finalI).vancancy_id)).collect(Collectors.toList()).get(0);
+            vacfltr.add(tmp);
+        }
+        DaysDelta(no_cls);
+        ArrayList<Bonus> bns_out = new ArrayList<>();
+        for(int i = 0; i < no_cls.size(); i++){
+            int finalI = i;
+            if(bns.stream().filter(x-> x.priority.equals(vacfltr.get(finalI).priority) & no_cls.get(finalI).days_delta <= x.days).collect(Collectors.toList()).size() != 0){
+                bns_out.add(bns.stream().filter(x-> x.priority.equals(vacfltr.get(finalI).priority) & no_cls.get(finalI).days_delta <= x.days).collect(Collectors.toList()).get(0));
+            }
+        }
+        PrintWriter pw4 = new PrintWriter(new File("output4.txt"));
+        Integer bns_sum = 0;
+        for(int i = 0; i < bns_out.size(); i++){
+            bns_sum += bns_out.get(i).bonus;
+        }
+        pw4.print(bns_sum);
+        pw4.flush();
+
+
+    }
+
+    public static void DaysDelta(List<NoClose> no_cls) throws ParseException {
+        for(int i = 0; i < no_cls.size(); i++){
+            SimpleDateFormat formatter1 = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
+            Date date_strt = formatter1.parse(no_cls.get(i).data_open);
+            Date date_end = formatter1.parse(no_cls.get(i).data_close);
+            long milliseconds = date_end.getTime() - date_strt.getTime();
+            no_cls.get(i).days_delta = (int) (milliseconds / (24 * 60 * 60 * 1000));
+
+        }
     }
 }
